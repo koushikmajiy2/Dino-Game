@@ -1,0 +1,1334 @@
+
+
+<!DOCTYPE html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dino Adventure Runner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            overflow: hidden;
+            margin: 0;
+            background: linear-gradient(to bottom, #1a2a6c, #b21f1f, #fdbb2d);
+            height: 100vh;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            border: 4px solid #fdbb2d;
+        }
+        
+        .dino {
+            position: absolute;
+            bottom: 0;
+            left: 50px;
+            width: 60px;
+            height: 60px;
+            transition: transform 0.1s;
+        }
+        
+        .obstacle {
+            position: absolute;
+            bottom: 0;
+            width: 30px;
+            height: 50px;
+        }
+        
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20px;
+            background-color: #4b3621;
+        }
+        
+        .cloud {
+            position: absolute;
+            opacity: 0.8;
+        }
+        
+        .star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 1s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            from { opacity: 0.3; }
+            to { opacity: 1; }
+        }
+        
+        .power-up {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            bottom: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffff00, #ff9900);
+            box-shadow: 0 0 10px #ffff00;
+            animation: pulse 1s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(1); box-shadow: 0 0 10px #ffff00; }
+            to { transform: scale(1.1); box-shadow: 0 0 20px #ffff00; }
+        }
+        
+        .meteor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #ff4500;
+            border-radius: 50%;
+            box-shadow: -5px 5px 15px #ff8c00;
+            transform: rotate(-45deg);
+        }
+        
+        .meteor::before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 10px;
+            background: linear-gradient(to right, #ff4500, transparent);
+            top: 5px;
+            right: 15px;
+            border-radius: 50%;
+        }
+        
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 10;
+            display: none;
+        }
+        
+        .score-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .power-meter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 100px;
+            height: 15px;
+            border: 2px solid white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .power-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #00ff00, #ffff00);
+            transition: width 0.3s;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8 flex flex-col items-center">
+        <h1 class="text-3xl mb-6 text-center text-yellow-300 drop-shadow-lg">Dino Adventure Runner</h1>
+        
+        <div class="game-container">
+            <div class="ground"></div>
+            <div class="dino">
+                <svg viewBox="0 0 100 100" fill="#4ade80">
+                    <path d="M60,20 L90,20 L90,10 L60,10 L60,0 L40,0 L40,10 L10,10 L10,30 L20,30 L20,40 L30,40 L30,50 L10,50 L10,60 L0,60 L0,80 L10,80 L10,90 L30,90 L30,100 L50,100 L50,90 L60,90 L60,70 L50,70 L50,60 L70,60 L70,50 L80,50 L80,40 L90,40 L90,30 L60,30 L60,20"></path>
+                    <circle cx="75" cy="15" r="5" fill="black"></circle>
+                </svg>
+            </div>
+            <div class="score-display">Score: 0</div>
+            <div class="power-meter">
+                <div class="power-fill"></div>
+            </div>
+            <div class="game-over-screen">
+                <h2 class="text-3xl mb-4 text-red-500">GAME OVER</h2>
+                <p class="mb-4">Your Score: <span id="final-score">0</span></p>
+                <button id="restart-button" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+                    Play Again
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-6 flex gap-4 justify-center">
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-sm mb-2">Controls:</p>
+                <p class="text-xs">Space / Tap - Jump</p>
+                <p class="text-xs">Down Arrow - Duck</p>
+                <p class="text-xs">S Key - Special Power</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-sm mb-2">Power-ups:</p>
+                <p class="text-xs">⭐ - Invincibility</p>
+                <p class="text-xs">💨 - Speed Boost</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Created by Kouhsik Maji | Dino Adventure Runner © 2023</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.querySelector('.game-container');
+            const dino = document.querySelector('.dino');
+            const ground = document.querySelector('.ground');
+            const scoreDisplay = document.querySelector('.score-display');
+            const gameOverScreen = document.querySelector('.game-over-screen');
+            const finalScore = document.getElementById('final-score');
+            const restartButton = document.getElementById('restart-button');
+            const powerFill = document.querySelector('.power-fill');
+            
+            let isJumping = false;
+            let isDucking = false;
+            let isGameOver = false;
+            let score = 0;
+            let gameSpeed = 6;
+            let powerLevel = 0;
+            let isInvincible = false;
+            let obstacleInterval;
+            let powerUpInterval;
+            let meteorInterval;
+            let scoreInterval;
+            
+            // Create stars in the background
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 2}s`;
+                gameContainer.appendChild(star);
+            }
+            
+            function createCloud() {
+                const cloud = document.createElement('div');
+                cloud.classList.add('cloud');
+                cloud.style.left = '100%';
+                cloud.style.top = `${Math.random() * 100}px`;
+                
+                const cloudSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                cloudSvg.setAttribute('viewBox', '0 0 100 50');
+                cloudSvg.setAttribute('width', '60');
+                cloudSvg.setAttribute('height', '30');
+                
+                const cloudPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                cloudPath.setAttribute('d', 'M10,30 Q20,10 40,20 Q50,0 70,10 Q90,5 90,30 Z');
+                cloudPath.setAttribute('fill', 'rgba(255, 255, 255, 0.7)');
+                
+                cloudSvg.appendChild(cloudPath);
+                cloud.appendChild(cloudSvg);
+                gameContainer.appendChild(cloud);
+                
+                let cloudPosition = 100;
+                
+                function moveCloud() {
+                    if (isGameOver) return;
+                    
+                    cloudPosition -= 1;
+                    cloud.style.left = `${cloudPosition}%`;
+                    
+                    if (cloudPosition < -20) {
+                        cloud.remove();
+                    } else {
+                        requestAnimationFrame(moveCloud);
+                    }
+                }
+                
+                moveCloud();
+            }
+            
+            function createObstacle() {
+                if (isGameOver) return;
+                
+                const obstacle = document.createElement('div');
+                obstacle.classList.add('obstacle');
+                obstacle.style.left = '100%';
+                
+                // Randomly choose obstacle type
+                const obstacleType = Math.floor(Math.random() * 3);
+                
+                let obstacleSvg;
+                
+                if (obstacleType === 0) {
+                    // Cactus
+                    obstacleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    obstacleSvg.setAttribute('viewBox', '0 0 30 50');
+                    obstacleSvg.setAttribute('width', '30');
+                    obstacleSvg.setAttribute('height', '50');
+                    
+                    const cactusPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    cactusPath.setAttribute('d', 'M15,0 L15,50 L25,50 L25,30 L30,30 L30,15 L25,15 L25,5 L15,5 L15,0 L5,0 L5,15 L0,15 L0,30 L5,30 L5,50 L15,50');
+                    cactusPath.setAttribute('fill', '#2e8b57');
+                    
+                    obstacleSvg.appendChild(cactusPath);
+                    obstacle.style.height = '50px';
+                } else if (obstacleType === 1) {
+                    // Rock
+                    obstacleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    obstacleSvg.setAttribute('viewBox', '0 0 40 30');
+                    obstacleSvg.setAttribute('width', '40');
+                    obstacleSvg.setAttribute('height', '30');
+                    
+                    const rockPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    rockPath.setAttribute('d', 'M0,30 L10,10 L25,5 L40,15 L35,30 Z');
+                    rockPath.setAttribute('fill', '#808080');
+                    
+                    obstacleSvg.appendChild(rockPath);
+                    obstacle.style.height = '30px';
+                    obstacle.style.width = '40px';
+                } else {
+                    // Bird (flying obstacle)
+                    obstacleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    obstacleSvg.setAttribute('viewBox', '0 0 40 20');
+                    obstacleSvg.setAttribute('width', '40');
+                    obstacleSvg.setAttribute('height', '20');
+                    
+                    const birdPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    birdPath.setAttribute('d', 'M0,10 Q10,0 20,10 Q30,0 40,10 Q30,20 20,10 Q10,20 0,10');
+                    birdPath.setAttribute('fill', '#cd5c5c');
+                    
+                    obstacleSvg.appendChild(birdPath);
+                    obstacle.style.height = '20px';
+                    obstacle.style.width = '40px';
+                    obstacle.style.bottom = `${Math.random() > 0.5 ? 100 : 50}px`;
+                }
+                
+                obstacle.appendChild(obstacleSvg);
+                gameContainer.appendChild(obstacle);
+                
+                let obstaclePosition = 100;
+                
+                function moveObstacle() {
+                    if (isGameOver) return;
+                    
+                    obstaclePosition -= gameSpeed / 10;
+                    obstacle.style.left = `${obstaclePosition}%`;
+                    
+                    const dinoRect = dino.getBoundingClientRect();
+                    const obstacleRect = obstacle.getBoundingClientRect();
+                    
+                    // Check for collision
+                    if (
+                        dinoRect.right > obstacleRect.left + 5 &&
+                        dinoRect.left < obstacleRect.right - 5 &&
+                        dinoRect.bottom > obstacleRect.top + 5 &&
+                        dinoRect.top < obstacleRect.bottom - 5
+                    ) {
+                        if (!isInvincible) {
+                            gameOver();
+                        }
+                    }
+                    
+                    if (obstaclePosition < -10) {
+                        obstacle.remove();
+                    } else {
+                        requestAnimationFrame(moveObstacle);
+                    }
+                }
+                
+                moveObstacle();
+                
+                // Set next obstacle timing based on game speed
+                const minTime = 1500 - gameSpeed * 100;
+                const maxTime = 3000 - gameSpeed * 150;
+                const nextTime = Math.max(Math.random() * (maxTime - minTime) + minTime, 800);
+                
+                obstacleInterval = setTimeout(createObstacle, nextTime);
+            }
+            
+            function createPowerUp() {
+                if (isGameOver) return;
+                
+                const powerUp = document.createElement('div');
+                powerUp.classList.add('power-up');
+                powerUp.style.left = '100%';
+                gameContainer.appendChild(powerUp);
+                
+                let powerUpPosition = 100;
+                
+                function movePowerUp() {
+                    if (isGameOver) return;
+                    
+                    powerUpPosition -= gameSpeed / 10;
+                    powerUp.style.left = `${powerUpPosition}%`;
+                    
+                    const dinoRect = dino.getBoundingClientRect();
+                    const powerUpRect = powerUp.getBoundingClientRect();
+                    
+                    // Check for collection
+                    if (
+                        dinoRect.right > powerUpRect.left &&
+                        dinoRect.left < powerUpRect.right &&
+                        dinoRect.bottom > powerUpRect.top &&
+                        dinoRect.top < powerUpRect.bottom
+                    ) {
+                        // Collect power-up
+                        powerUp.remove();
+                        activatePowerUp();
+                        return;
+                    }
+                    
+                    if (powerUpPosition < -10) {
+                        powerUp.remove();
+                    } else {
+                        requestAnimationFrame(movePowerUp);
+                    }
+                }
+                
+                movePowerUp();
+                
+                // Set next power-up timing
+                powerUpInterval = setTimeout(createPowerUp, Math.random() * 15000 + 10000);
+            }
+            
+            function createMeteor() {
+                if (isGameOver) return;
+                
+                const meteor = document.createElement('div');
+                meteor.classList.add('meteor');
+                meteor.style.left = `${Math.random() * 80 + 10}%`;
+                meteor.style.top = '-20px';
+                gameContainer.appendChild(meteor);
+                
+                let meteorY = -20;
+                let meteorX = parseInt(meteor.style.left);
+                
+                function moveMeteor() {
+                    if (isGameOver) return;
+                    
+                    meteorY += 5;
+                    meteorX -= 2;
+                    meteor.style.top = `${meteorY}px`;
+                    meteor.style.left = `${meteorX}%`;
+                    
+                    const dinoRect = dino.getBoundingClientRect();
+                    const meteorRect = meteor.getBoundingClientRect();
+                    
+                    // Check for collision
+                    if (
+                        dinoRect.right > meteorRect.left &&
+                        dinoRect.left < meteorRect.right &&
+                        dinoRect.bottom > meteorRect.top &&
+                        dinoRect.top < meteorRect.bottom
+                    ) {
+                        if (!isInvincible) {
+                            gameOver();
+                        }
+                    }
+                    
+                    if (meteorY > 300) {
+                        meteor.remove();
+                    } else {
+                        requestAnimationFrame(moveMeteor);
+                    }
+                }
+                
+                moveMeteor();
+                
+                // Set next meteor timing
+                meteorInterval = setTimeout(createMeteor, Math.random() * 8000 + 5000);
+            }
+            
+            function activatePowerUp() {
+                // Random power-up effect
+                const powerType = Math.floor(Math.random() * 2);
+                
+                if (powerType === 0) {
+                    // Invincibility
+                    isInvincible = true;
+                    dino.style.filter = 'hue-rotate(90deg) brightness(1.5)';
+                    
+                    setTimeout(() => {
+                        isInvincible = false;
+                        dino.style.filter = '';
+                    }, 5000);
+                } else {
+                    // Speed boost
+                    const oldSpeed = gameSpeed;
+                    gameSpeed += 3;
+                    
+                    setTimeout(() => {
+                        gameSpeed = oldSpeed;
+                    }, 3000);
+                }
+                
+                // Add power to meter
+                powerLevel = Math.min(powerLevel + 30, 100);
+                updatePowerMeter();
+            }
+            
+            function updatePowerMeter() {
+                powerFill.style.width = `${powerLevel}%`;
+            }
+            
+            function useSpecialPower() {
+                if (powerLevel >= 50) {
+                    // Clear obstacles
+                    document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
+                    
+                    // Slow down game briefly
+                    const oldSpeed = gameSpeed;
+                    gameSpeed = 3;
+                    
+                    setTimeout(() => {
+                        gameSpeed = oldSpeed;
+                    }, 2000);
+                    
+                    // Use power
+                    powerLevel -= 50;
+                    updatePowerMeter();
+                }
+            }
+            
+            function jump() {
+                if (isJumping || isGameOver) return;
+                
+                isJumping = true;
+                let jumpCount = 0;
+                let jumpHeight = 0;
+                
+                function jumpAnimation() {
+                    jumpCount++;
+                    
+                    if (jumpCount < 15) {
+                        jumpHeight += 6;
+                    } else if (jumpCount < 30) {
+                        jumpHeight -= 6;
+                    }
+                    
+                    dino.style.transform = `translateY(-${jumpHeight}px)`;
+                    
+                    if (jumpCount < 30) {
+                        requestAnimationFrame(jumpAnimation);
+                    } else {
+                        isJumping = false;
+                        dino.style.transform = '';
+                    }
+                }
+                
+                jumpAnimation();
+            }
+            
+            function duck() {
+                if (isJumping || isDucking || isGameOver) return;
+                
+                isDucking = true;
+                dino.style.transform = 'scaleY(0.5) translateY(30px)';
+                
+                // Automatically stand up after a short time
+                setTimeout(() => {
+                    if (isDucking) {
+                        isDucking = false;
+                        dino.style.transform = '';
+                    }
+                }, 1000);
+            }
+            
+            function standUp() {
+                if (isDucking) {
+                    isDucking = false;
+                    dino.style.transform = '';
+                }
+            }
+            
+            function updateScore() {
+                score++;
+                scoreDisplay.textContent = `Score: ${score}`;
+                
+                // Increase game speed gradually
+                if (score % 100 === 0) {
+                    gameSpeed = Math.min(gameSpeed + 0.5, 12);
+                }
+                
+                // Add power gradually
+                if (score % 50 === 0) {
+                    powerLevel = Math.min(powerLevel + 5, 100);
+                    updatePowerMeter();
+                }
+            }
+            
+            function gameOver() {
+                isGameOver = true;
+                clearTimeout(obstacleInterval);
+                clearTimeout(powerUpInterval);
+                clearTimeout(meteorInterval);
+                clearInterval(scoreInterval);
+                
+                finalScore.textContent = score;
+                gameOverScreen.style.display = 'flex';
+            }
+            
+            function startGame() {
+                // Reset variables
+                isGameOver = false;
+                isJumping = false;
+                isDucking = false;
+                score = 0;
+                gameSpeed = 6;
+                powerLevel = 0;
+                isInvincible = false;
+                
+                // Clear existing elements
+                document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
+                document.querySelectorAll('.power-up').forEach(pow => pow.remove());
+                document.querySelectorAll('.meteor').forEach(met => met.remove());
+                document.querySelectorAll('.cloud').forEach(cloud => cloud.remove());
+                
+                // Reset UI
+                scoreDisplay.textContent = 'Score: 0';
+                updatePowerMeter();
+                gameOverScreen.style.display = 'none';
+                dino.style.transform = '';
+                dino.style.filter = '';
+                
+                // Start game elements
+                createObstacle();
+                createPowerUp();
+                createMeteor();
+                
+                // Create clouds periodically
+                setInterval(createCloud, 5000);
+                
+                // Update score
+                scoreInterval = setInterval(updateScore, 100);
+            }
+            
+            // Event listeners
+            document.addEventListener('keydown', (event) => {
+                if (event.code === 'Space' || event.code === 'ArrowUp') {
+                    event.preventDefault();
+                    jump();
+                } else if (event.code === 'ArrowDown') {
+                    event.preventDefault();
+                    duck();
+                } else if (event.code === 'KeyS') {
+                    event.preventDefault();
+                    useSpecialPower();
+                }
+            });
+            
+            document.addEventListener('keyup', (event) => {
+                if (event.code === 'ArrowDown') {
+                    standUp();
+                }
+            });
+            
+            gameContainer.addEventListener('touchstart', (event) => {
+                event.preventDefault();
+                jump();
+            });
+            
+            restartButton.addEventListener('click', startGame);
+            
+            // Start the game
+            startGame();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'947b0769c28f93a4',t:'MTc0ODU3NDUyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
+
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dino Adventure Runner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        
+        body {
+            font-family: 'Press Start 2P', cursive;
+            overflow: hidden;
+            margin: 0;
+            background: linear-gradient(to bottom, #1a2a6c, #b21f1f, #fdbb2d);
+            height: 100vh;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            border: 4px solid #fdbb2d;
+        }
+        
+        .dino {
+            position: absolute;
+            bottom: 0;
+            left: 50px;
+            width: 60px;
+            height: 60px;
+            transition: transform 0.1s;
+        }
+        
+        .obstacle {
+            position: absolute;
+            bottom: 0;
+            width: 30px;
+            height: 50px;
+        }
+        
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 20px;
+            background-color: #4b3621;
+        }
+        
+        .cloud {
+            position: absolute;
+            opacity: 0.8;
+        }
+        
+        .star {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background-color: white;
+            border-radius: 50%;
+            animation: twinkle 1s infinite alternate;
+        }
+        
+        @keyframes twinkle {
+            from { opacity: 0.3; }
+            to { opacity: 1; }
+        }
+        
+        .power-up {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            bottom: 20px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ffff00, #ff9900);
+            box-shadow: 0 0 10px #ffff00;
+            animation: pulse 1s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            from { transform: scale(1); box-shadow: 0 0 10px #ffff00; }
+            to { transform: scale(1.1); box-shadow: 0 0 20px #ffff00; }
+        }
+        
+        .meteor {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-color: #ff4500;
+            border-radius: 50%;
+            box-shadow: -5px 5px 15px #ff8c00;
+            transform: rotate(-45deg);
+        }
+        
+        .meteor::before {
+            content: '';
+            position: absolute;
+            width: 30px;
+            height: 10px;
+            background: linear-gradient(to right, #ff4500, transparent);
+            top: 5px;
+            right: 15px;
+            border-radius: 50%;
+        }
+        
+        .game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 10;
+            display: none;
+        }
+        
+        .score-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: white;
+            font-size: 16px;
+        }
+        
+        .power-meter {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 100px;
+            height: 15px;
+            border: 2px solid white;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .power-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(to right, #00ff00, #ffff00);
+            transition: width 0.3s;
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            padding: 10px;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto px-4 py-8 flex flex-col items-center">
+        <h1 class="text-3xl mb-6 text-center text-yellow-300 drop-shadow-lg">Dino Adventure Runner</h1>
+        
+        <div class="game-container">
+            <div class="ground"></div>
+            <div class="dino">
+                <svg viewBox="0 0 100 100" fill="#4ade80">
+                    <path d="M60,20 L90,20 L90,10 L60,10 L60,0 L40,0 L40,10 L10,10 L10,30 L20,30 L20,40 L30,40 L30,50 L10,50 L10,60 L0,60 L0,80 L10,80 L10,90 L30,90 L30,100 L50,100 L50,90 L60,90 L60,70 L50,70 L50,60 L70,60 L70,50 L80,50 L80,40 L90,40 L90,30 L60,30 L60,20"></path>
+                    <circle cx="75" cy="15" r="5" fill="black"></circle>
+                </svg>
+            </div>
+            <div class="score-display">Score: 0</div>
+            <div class="power-meter">
+                <div class="power-fill"></div>
+            </div>
+            <div class="game-over-screen">
+                <h2 class="text-3xl mb-4 text-red-500">GAME OVER</h2>
+                <p class="mb-4">Your Score: <span id="final-score">0</span></p>
+                <button id="restart-button" class="bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-4 rounded">
+                    Play Again
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-6 flex gap-4 justify-center">
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-sm mb-2">Controls:</p>
+                <p class="text-xs">Space / Tap - Jump</p>
+                <p class="text-xs">Down Arrow - Duck</p>
+                <p class="text-xs">S Key - Special Power</p>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg">
+                <p class="text-sm mb-2">Power-ups:</p>
+                <p class="text-xs">⭐ - Invincibility</p>
+                <p class="text-xs">💨 - Speed Boost</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Created by Kouhsik Maji | Dino Adventure Runner © 2023</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const gameContainer = document.querySelector('.game-container');
+            const dino = document.querySelector('.dino');
+            const ground = document.querySelector('.ground');
+            const scoreDisplay = document.querySelector('.score-display');
+            const gameOverScreen = document.querySelector('.game-over-screen');
+            const finalScore = document.getElementById('final-score');
+            const restartButton = document.getElementById('restart-button');
+            const powerFill = document.querySelector('.power-fill');
+            
+            let isJumping = false;
+            let isDucking = false;
+            let isGameOver = false;
+            let score = 0;
+            let gameSpeed = 6;
+            let powerLevel = 0;
+            let isInvincible = false;
+            let obstacleInterval;
+            let powerUpInterval;
+            let meteorInterval;
+            let scoreInterval;
+            
+            // Create stars in the background
+            for (let i = 0; i < 50; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 2}s`;
+                gameContainer.appendChild(star);
+            }
+            
+            function createCloud() {
+                const cloud = document.createElement('div');
+                cloud.classList.add('cloud');
+                cloud.style.left = '100%';
+                cloud.style.top = `${Math.random() * 100}px`;
+                
+                const cloudSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                cloudSvg.setAttribute('viewBox', '0 0 100 50');
+                cloudSvg.setAttribute('width', '60');
+                cloudSvg.setAttribute('height', '30');
+                
+                const cloudPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                cloudPath.setAttribute('d', 'M10,30 Q20,10 40,20 Q50,0 70,10 Q90,5 90,30 Z');
+                cloudPath.setAttribute('fill', 'rgba(255, 255, 255, 0.7)');
+                
+                cloudSvg.appendChild(cloudPath);
+                cloud.appendChild(cloudSvg);
+                gameContainer.appendChild(cloud);
+                
+                let cloudPosition = 100;
+                
+                function moveCloud() {
+                    if (isGameOver) return;
+                    
+                    cloudPosition -= 1;
+                    cloud.style.left = `${cloudPosition}%`;
+                    
+                    if (cloudPosition < -20) {
+                        cloud.remove();
+                    } else {
+                        requestAnimationFrame(moveCloud);
+                    }
+                }
+                
+                moveCloud();
+            }
+            
+            function createObstacle() {
+                if (isGameOver) return;
+                
+                const obstacle = document.createElement('div');
+                obstacle.classList.add('obstacle');
+                obstacle.style.left = '100%';
+                
+                // Randomly choose obstacle type
+                const obstacleType = Math.floor(Math.random() * 3);
+                
+                let obstacleSvg;
+                
+                if (obstacleType === 0) {
+                    // Cactus
+                    obstacleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    obstacleSvg.setAttribute('viewBox', '0 0 30 50');
+                    obstacleSvg.setAttribute('width', '30');
+                    obstacleSvg.setAttribute('height', '50');
+                    
+                    const cactusPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    cactusPath.setAttribute('d', 'M15,0 L15,50 L25,50 L25,30 L30,30 L30,15 L25,15 L25,5 L15,5 L15,0 L5,0 L5,15 L0,15 L0,30 L5,30 L5,50 L15,50');
+                    cactusPath.setAttribute('fill', '#2e8b57');
+                    
+                    obstacleSvg.appendChild(cactusPath);
+                    obstacle.style.height = '50px';
+                } else if (obstacleType === 1) {
+                    // Rock
+                    obstacleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    obstacleSvg.setAttribute('viewBox', '0 0 40 30');
+                    obstacleSvg.setAttribute('width', '40');
+                    obstacleSvg.setAttribute('height', '30');
+                    
+                    const rockPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    rockPath.setAttribute('d', 'M0,30 L10,10 L25,5 L40,15 L35,30 Z');
+                    rockPath.setAttribute('fill', '#808080');
+                    
+                    obstacleSvg.appendChild(rockPath);
+                    obstacle.style.height = '30px';
+                    obstacle.style.width = '40px';
+                } else {
+                    // Bird (flying obstacle)
+                    obstacleSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    obstacleSvg.setAttribute('viewBox', '0 0 40 20');
+                    obstacleSvg.setAttribute('width', '40');
+                    obstacleSvg.setAttribute('height', '20');
+                    
+                    const birdPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    birdPath.setAttribute('d', 'M0,10 Q10,0 20,10 Q30,0 40,10 Q30,20 20,10 Q10,20 0,10');
+                    birdPath.setAttribute('fill', '#cd5c5c');
+                    
+                    obstacleSvg.appendChild(birdPath);
+                    obstacle.style.height = '20px';
+                    obstacle.style.width = '40px';
+                    obstacle.style.bottom = `${Math.random() > 0.5 ? 100 : 50}px`;
+                }
+                
+                obstacle.appendChild(obstacleSvg);
+                gameContainer.appendChild(obstacle);
+                
+                let obstaclePosition = 100;
+                
+                function moveObstacle() {
+                    if (isGameOver) return;
+                    
+                    obstaclePosition -= gameSpeed / 10;
+                    obstacle.style.left = `${obstaclePosition}%`;
+                    
+                    const dinoRect = dino.getBoundingClientRect();
+                    const obstacleRect = obstacle.getBoundingClientRect();
+                    
+                    // Check for collision
+                    if (
+                        dinoRect.right > obstacleRect.left + 5 &&
+                        dinoRect.left < obstacleRect.right - 5 &&
+                        dinoRect.bottom > obstacleRect.top + 5 &&
+                        dinoRect.top < obstacleRect.bottom - 5
+                    ) {
+                        if (!isInvincible) {
+                            gameOver();
+                        }
+                    }
+                    
+                    if (obstaclePosition < -10) {
+                        obstacle.remove();
+                    } else {
+                        requestAnimationFrame(moveObstacle);
+                    }
+                }
+                
+                moveObstacle();
+                
+                // Set next obstacle timing based on game speed
+                const minTime = 1500 - gameSpeed * 100;
+                const maxTime = 3000 - gameSpeed * 150;
+                const nextTime = Math.max(Math.random() * (maxTime - minTime) + minTime, 800);
+                
+                obstacleInterval = setTimeout(createObstacle, nextTime);
+            }
+            
+            function createPowerUp() {
+                if (isGameOver) return;
+                
+                const powerUp = document.createElement('div');
+                powerUp.classList.add('power-up');
+                powerUp.style.left = '100%';
+                gameContainer.appendChild(powerUp);
+                
+                let powerUpPosition = 100;
+                
+                function movePowerUp() {
+                    if (isGameOver) return;
+                    
+                    powerUpPosition -= gameSpeed / 10;
+                    powerUp.style.left = `${powerUpPosition}%`;
+                    
+                    const dinoRect = dino.getBoundingClientRect();
+                    const powerUpRect = powerUp.getBoundingClientRect();
+                    
+                    // Check for collection
+                    if (
+                        dinoRect.right > powerUpRect.left &&
+                        dinoRect.left < powerUpRect.right &&
+                        dinoRect.bottom > powerUpRect.top &&
+                        dinoRect.top < powerUpRect.bottom
+                    ) {
+                        // Collect power-up
+                        powerUp.remove();
+                        activatePowerUp();
+                        return;
+                    }
+                    
+                    if (powerUpPosition < -10) {
+                        powerUp.remove();
+                    } else {
+                        requestAnimationFrame(movePowerUp);
+                    }
+                }
+                
+                movePowerUp();
+                
+                // Set next power-up timing
+                powerUpInterval = setTimeout(createPowerUp, Math.random() * 15000 + 10000);
+            }
+            
+            function createMeteor() {
+                if (isGameOver) return;
+                
+                const meteor = document.createElement('div');
+                meteor.classList.add('meteor');
+                meteor.style.left = `${Math.random() * 80 + 10}%`;
+                meteor.style.top = '-20px';
+                gameContainer.appendChild(meteor);
+                
+                let meteorY = -20;
+                let meteorX = parseInt(meteor.style.left);
+                
+                function moveMeteor() {
+                    if (isGameOver) return;
+                    
+                    meteorY += 5;
+                    meteorX -= 2;
+                    meteor.style.top = `${meteorY}px`;
+                    meteor.style.left = `${meteorX}%`;
+                    
+                    const dinoRect = dino.getBoundingClientRect();
+                    const meteorRect = meteor.getBoundingClientRect();
+                    
+                    // Check for collision
+                    if (
+                        dinoRect.right > meteorRect.left &&
+                        dinoRect.left < meteorRect.right &&
+                        dinoRect.bottom > meteorRect.top &&
+                        dinoRect.top < meteorRect.bottom
+                    ) {
+                        if (!isInvincible) {
+                            gameOver();
+                        }
+                    }
+                    
+                    if (meteorY > 300) {
+                        meteor.remove();
+                    } else {
+                        requestAnimationFrame(moveMeteor);
+                    }
+                }
+                
+                moveMeteor();
+                
+                // Set next meteor timing
+                meteorInterval = setTimeout(createMeteor, Math.random() * 8000 + 5000);
+            }
+            
+            function activatePowerUp() {
+                // Random power-up effect
+                const powerType = Math.floor(Math.random() * 2);
+                
+                if (powerType === 0) {
+                    // Invincibility
+                    isInvincible = true;
+                    dino.style.filter = 'hue-rotate(90deg) brightness(1.5)';
+                    
+                    setTimeout(() => {
+                        isInvincible = false;
+                        dino.style.filter = '';
+                    }, 5000);
+                } else {
+                    // Speed boost
+                    const oldSpeed = gameSpeed;
+                    gameSpeed += 3;
+                    
+                    setTimeout(() => {
+                        gameSpeed = oldSpeed;
+                    }, 3000);
+                }
+                
+                // Add power to meter
+                powerLevel = Math.min(powerLevel + 30, 100);
+                updatePowerMeter();
+            }
+            
+            function updatePowerMeter() {
+                powerFill.style.width = `${powerLevel}%`;
+            }
+            
+            function useSpecialPower() {
+                if (powerLevel >= 50) {
+                    // Clear obstacles
+                    document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
+                    
+                    // Slow down game briefly
+                    const oldSpeed = gameSpeed;
+                    gameSpeed = 3;
+                    
+                    setTimeout(() => {
+                        gameSpeed = oldSpeed;
+                    }, 2000);
+                    
+                    // Use power
+                    powerLevel -= 50;
+                    updatePowerMeter();
+                }
+            }
+            
+            function jump() {
+                if (isJumping || isGameOver) return;
+                
+                isJumping = true;
+                let jumpCount = 0;
+                let jumpHeight = 0;
+                
+                function jumpAnimation() {
+                    jumpCount++;
+                    
+                    if (jumpCount < 15) {
+                        jumpHeight += 6;
+                    } else if (jumpCount < 30) {
+                        jumpHeight -= 6;
+                    }
+                    
+                    dino.style.transform = `translateY(-${jumpHeight}px)`;
+                    
+                    if (jumpCount < 30) {
+                        requestAnimationFrame(jumpAnimation);
+                    } else {
+                        isJumping = false;
+                        dino.style.transform = '';
+                    }
+                }
+                
+                jumpAnimation();
+            }
+            
+            function duck() {
+                if (isJumping || isDucking || isGameOver) return;
+                
+                isDucking = true;
+                dino.style.transform = 'scaleY(0.5) translateY(30px)';
+                
+                // Automatically stand up after a short time
+                setTimeout(() => {
+                    if (isDucking) {
+                        isDucking = false;
+                        dino.style.transform = '';
+                    }
+                }, 1000);
+            }
+            
+            function standUp() {
+                if (isDucking) {
+                    isDucking = false;
+                    dino.style.transform = '';
+                }
+            }
+            
+            function updateScore() {
+                score++;
+                scoreDisplay.textContent = `Score: ${score}`;
+                
+                // Increase game speed gradually
+                if (score % 100 === 0) {
+                    gameSpeed = Math.min(gameSpeed + 0.5, 12);
+                }
+                
+                // Add power gradually
+                if (score % 50 === 0) {
+                    powerLevel = Math.min(powerLevel + 5, 100);
+                    updatePowerMeter();
+                }
+            }
+            
+            function gameOver() {
+                isGameOver = true;
+                clearTimeout(obstacleInterval);
+                clearTimeout(powerUpInterval);
+                clearTimeout(meteorInterval);
+                clearInterval(scoreInterval);
+                
+                finalScore.textContent = score;
+                gameOverScreen.style.display = 'flex';
+            }
+            
+            function startGame() {
+                // Reset variables
+                isGameOver = false;
+                isJumping = false;
+                isDucking = false;
+                score = 0;
+                gameSpeed = 6;
+                powerLevel = 0;
+                isInvincible = false;
+                
+                // Clear existing elements
+                document.querySelectorAll('.obstacle').forEach(obs => obs.remove());
+                document.querySelectorAll('.power-up').forEach(pow => pow.remove());
+                document.querySelectorAll('.meteor').forEach(met => met.remove());
+                document.querySelectorAll('.cloud').forEach(cloud => cloud.remove());
+                
+                // Reset UI
+                scoreDisplay.textContent = 'Score: 0';
+                updatePowerMeter();
+                gameOverScreen.style.display = 'none';
+                dino.style.transform = '';
+                dino.style.filter = '';
+                
+                // Start game elements
+                createObstacle();
+                createPowerUp();
+                createMeteor();
+                
+                // Create clouds periodically
+                setInterval(createCloud, 5000);
+                
+                // Update score
+                scoreInterval = setInterval(updateScore, 100);
+            }
+            
+            // Event listeners
+            document.addEventListener('keydown', (event) => {
+                if (event.code === 'Space' || event.code === 'ArrowUp') {
+                    event.preventDefault();
+                    jump();
+                } else if (event.code === 'ArrowDown') {
+                    event.preventDefault();
+                    duck();
+                } else if (event.code === 'KeyS') {
+                    event.preventDefault();
+                    useSpecialPower();
+                }
+            });
+            
+            document.addEventListener('keyup', (event) => {
+                if (event.code === 'ArrowDown') {
+                    standUp();
+                }
+            });
+            
+            gameContainer.addEventListener('touchstart', (event) => {
+                event.preventDefault();
+                jump();
+            });
+            
+            restartButton.addEventListener('click', startGame);
+            
+            // Start the game
+            startGame();
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'947b0769c28f93a4',t:'MTc0ODU3NDUyNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
